@@ -1,0 +1,2 @@
+# backend planejador de viagens
+ Este repositório contém o backend de uma aplicação de planejamento de viagens, uma aplicação para organizar e gerenciar viagens, com funcionalidades voltadas para o envio automatizado de e-mails de confirmação. Desenvolvido em Java com Spring Boot, o backend integra-se com microserviços e mensageria via Apache Kafka para assegurar comunicação eficiente e escalável entre as diferentes partes do sistema.
