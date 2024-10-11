@@ -1,0 +1,96 @@
+services:
+  postgres_trips:
+    image: postgres:latest
+    container_name: postgres_trips_api_microservice_db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: 01234
+      POSTGRES_DB: db_trips
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_viagem_data:/var/lib/postgresql/data
+    networks:
+      - planner_network
+
+  postgres_email:
+    image: postgres:latest
+    container_name: postgres_trips_email_microservice_db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: 01234
+      POSTGRES_DB: db_trips_email
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_email_data:/var/lib/postgresql/data
+    networks:
+      - planner_network
+
+  zookeeper:
+    container_name: ZOOKEEPER
+    image: confluentinc/cp-zookeeper:latest
+    networks:
+     - planner_network
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    container_name: KAFKA
+    image: confluentinc/cp-kafka:latest
+    networks:
+     - planner_network
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  kafdrop:
+    container_name: KAFDROP
+    image: obsidiandynamics/kafdrop:latest
+    networks:
+      - planner_network
+    depends_on:
+      - kafka
+    ports:
+      - "19000:9000"
+    environment:
+      KAFKA_BROKERCONNECT: kafka:9092
+
+  api:
+    container_name: trips_api
+    build: ./planner-api
+    restart: on-failure
+    ports:
+      - "8080:8080"
+    depends_on:
+      - kafka
+      - postgres_trips
+    networks:
+      - planner_network
+
+  email_api:
+    container_name: trips_email_api
+    build: planner-email-microservice-api
+    ports:
+      - "8081:8081"
+    depends_on:
+      - kafka
+      - postgres_trips
+    networks:
+      - planner_network
+
+volumes:
+  postgres_viagem_data:
+  postgres_email_data:
+
+networks:
+  planner_network:
